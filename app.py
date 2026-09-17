@@ -42,6 +42,9 @@ with col_form:
         cbr = st.number_input("Índice de Suporte Califórnia - CBR (%)", value=16.0, step=0.1)
         ll = st.number_input("Limite de Liquidez - LL (%)", value=0.0, step=1.0)
         ip = st.number_input("Índice de Plasticidade - IP (%)", value=0.0, step=1.0)
+        
+        st.markdown("---") # Divisória para as tensões
+        sigma3 = st.number_input("Tensão Confinante - σ3 (MPa)", value=0.021, format="%.3f")
 
     with c2:
         p2_0 = st.number_input("Passante 2,0 mm (%)", value=49.0, step=1.0)
@@ -49,8 +52,9 @@ with col_form:
         p0_074 = st.number_input("Passante 0,074 mm (%)", value=8.0, step=1.0)
         aashto = st.selectbox("Classificação AASHTO", ["A-1-a", "A-1-b", "A-2-4", "A-2-5", "A-2-6", "A-2-7", "A-3", "A-4", "A-5", "A-6", "A-7-5", "A-7-6"])
         
-        st.markdown("---") # Linha divisória sutil para as tensões
-        sigma3 = st.number_input("Tensão Confinante - σ3 (MPa)", value=0.021, format="%.3f")
+        # O markdown("<br>") adiciona um espaço em branco para compensar a linha extra que a esquerda tem (IP), mantendo as linhas divisórias perfeitamente alinhadas!
+        st.markdown("<br>", unsafe_allow_html=True) 
+        st.markdown("---") 
         sigmad = st.number_input("Tensão Desviadora - σd (MPa)", value=0.041, format="%.3f")
 
     st.markdown("<br>", unsafe_allow_html=True) # Espaçamento
