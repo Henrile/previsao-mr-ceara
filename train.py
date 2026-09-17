@@ -8,7 +8,7 @@ import joblib
 
 # 1. Carregar os dados
 # Certifique-se de que o arquivo Excel está na mesma pasta
-df = pd.read_excel("Banco_Dados_MR_CE_Dissertação_Pedro (4).xlsx")
+df = pd.read_excel("seu banco de dados.xlsx")
 
 # 2. Renomear as colunas para facilitar a manipulação
 df = df.rename(columns={
