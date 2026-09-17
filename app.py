@@ -19,7 +19,7 @@ st.title("Predição do Módulo de Resiliência (MR) - Solos do Ceará")
 st.markdown("Estimativa rápida a partir das propriedades físicas e do estado de tensão.")
 
 # Inserção da imagem do fluxograma
-st.image("Fluxo de Previsão de Resiliência dos Solos.png", caption="Fluxo de processamento e previsão do Módulo de Resiliência", use_container_width=True)
+st.image("Fluxo de Previsão de Resiliência dos Solos.png", caption="Fluxo de processamento e previsão do Módulo de Resiliência", width=800)
 
 st.divider()
 
