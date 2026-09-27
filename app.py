@@ -1,8 +1,10 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import joblib
 import os
+import base64
 
 # 1. Configuração da página
 st.set_page_config(
@@ -11,18 +13,15 @@ st.set_page_config(
     layout="wide"
 )
 
-# Injeção de CSS para aumentar o tamanho dos botões em ~13% e garantir responsividade
+# CSS Global
 st.markdown("""
     <style>
-    /* Aumenta a fonte e o padding dos botões */
     div.stButton > button {
         font-size: 1.13rem !important; 
         padding: 0.6rem 1.2rem !important;
         height: auto !important;
         transition: 0.3s;
     }
-    
-    /* Garante que imagens não quebrem no mobile */
     img {
         max-width: 100%;
         height: auto;
@@ -30,7 +29,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Carregar o modelo treinado
+# 2. Carregar o modelo
 @st.cache_resource
 def load_model():
     try:
@@ -40,7 +39,7 @@ def load_model():
 
 pipeline = load_model()
 
-# 3. Controle de Navegação das Etapas
+# 3. Navegação
 if "etapa" not in st.session_state:
     st.session_state.etapa = 1
 
@@ -50,38 +49,102 @@ def ir_para_parametros():
 def voltar_para_fluxo():
     st.session_state.etapa = 1
 
-# --- FUNÇÃO PARA ABRIR O ZOOM (MODAL) ---
-@st.dialog("Visualização Ampliada do Fluxograma", width="large")
-def modal_zoom_imagem(caminho):
-    st.image(caminho, use_container_width=True)
-    st.caption("🔍 Dica: No celular, faça o movimento de pinça com os dedos na tela para dar mais zoom.")
+# Função para converter a imagem em Base64 (necessário para o iframe HTML)
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
 
-# 4. Cabeçalho Geral
+# 4. Interface Geral
 st.title("Predição do Módulo de Resiliência (MR) - Solos do Ceará")
 st.markdown("Estimativa rápida a partir das propriedades físicas e do estado de tensão.")
 st.divider()
 
 # =========================================================
-# ETAPA 1: FLUXOGRAMA
+# ETAPA 1: FLUXOGRAMA (COM ZOOM E ANIMAÇÃO)
 # =========================================================
 if st.session_state.etapa == 1:
     st.subheader("1. Fluxograma Metodológico")
-    st.caption("Conheça o processo de tratamento de dados e modelagem preditiva antes de inserir os parâmetros.")
+    st.caption("🔍 Role o mouse ou faça o **movimento de pinça no celular** para dar zoom. Clique, arraste e solte para ver a animação elástica.")
 
     caminho_imagem = "Fluxo de Previsão de Resiliência dos Solos.png"
     
     if os.path.exists(caminho_imagem):
-        # Coluna centralizada recebendo 70% da largura (reduzindo 30% visualmente)
-        col_esq, col_centro, col_dir = st.columns([1.5, 7, 1.5])
-        with col_centro:
-            st.image(
-                caminho_imagem, 
-                caption="Visualização Reduzida", 
-                use_container_width=True
-            )
-            # Botão para ativar o zoom (Dialog)
-            if st.button("🔍 Ampliar Imagem / Dar Zoom", use_container_width=True):
-                modal_zoom_imagem(caminho_imagem)
+        img_base64 = get_base64_image(caminho_imagem)
+        
+        # HTML/CSS/JS para Pan & Zoom com efeito de mola (puxar e soltar)
+        custom_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+        <style>
+            #container {{
+                width: 70%; /* Reduz a área da imagem em 30% em relação à tela (100-30) */
+                height: 500px;
+                margin: 0 auto;
+                overflow: hidden;
+                border: 2px dashed #ccc;
+                border-radius: 10px;
+                position: relative;
+                background-color: #f9f9f9;
+                cursor: grab;
+            }}
+            #container:active {{
+                cursor: grabbing;
+            }}
+            #zoom-img {{
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                transform-origin: center center;
+                transition: transform 0.1s ease-out; /* Suavidade no pan/zoom */
+            }}
+            /* Classe adicionada quando solta a imagem (efeito mola/despuxar) */
+            .spring-back {{
+                transition: transform 0.6s cubic-bezier(0.25, 1.5, 0.5, 1) !important;
+            }}
+        </style>
+        </head>
+        <body>
+            <div id="container">
+                <img id="zoom-img" src="data:image/png;base64,{img_base64}" alt="Fluxograma" draggable="false" />
+            </div>
+
+            <script src="https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js"></script>
+            <script>
+                // Inicializa a biblioteca Panzoom para gerenciar pinça (mobile) e mouse (desktop)
+                const elem = document.getElementById('zoom-img');
+                const pz = panzoom(elem, {{
+                    maxZoom: 5,
+                    minZoom: 0.5,
+                    bounds: true,
+                    boundsPadding: 0.1
+                }});
+
+                // Adiciona o efeito elástico (puxar e soltar)
+                let isDragging = false;
+                
+                elem.addEventListener('panzoomstart', () => {{
+                    isDragging = true;
+                    elem.classList.remove('spring-back');
+                }});
+
+                elem.addEventListener('panzoomend', () => {{
+                    isDragging = false;
+                    // Ao soltar, se estiver fora do centro (pan), nós damos um pequeno efeito de volta
+                    elem.classList.add('spring-back');
+                    
+                    // Opcional: Se quiser que volte sempre pro centro ao soltar, descomente a linha abaixo:
+                    // pz.moveTo(0, 0); 
+                }});
+            </script>
+        </body>
+        </html>
+        """
+        
+        # Renderiza o componente HTML no Streamlit (70% de largura fica controlado no CSS acima, o iframe pega tudo)
+        components.html(custom_html, height=520)
+        
     else:
         st.warning(f"Imagem '{caminho_imagem}' não encontrada no diretório atual.")
 
