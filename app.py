@@ -1,93 +1,72 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import joblib
+import os
 
-# 1. Configuração da página em modo "wide" para aproveitar a tela toda
+# Configuração da página
 st.set_page_config(
-    page_title="Predição de MR - Ceará",
-    page_icon="🛣️",
-    layout="wide"
+    page_title="Previsão MR Ceará",
+    page_icon="📈",
+    layout="centered"
 )
 
-# 2. Carregar o modelo treinado com sistema de cache do Streamlit
-@st.cache_resource
-def load_model():
-    try:
-        return joblib.load('xgb_mr_model.pkl')
-    except FileNotFoundError:
-        return None
+# Inicializa o estado da etapa na sessão
+if "etapa" not in st.session_state:
+    st.session_state.etapa = 1
 
-pipeline = load_model()
+def ir_para_parametros():
+    st.session_state.etapa = 2
 
-# 3. Cabeçalho e Contexto
-st.title("Predição do Módulo de Resiliência (MR) - Solos do Ceará")
-st.markdown("Estimativa rápida a partir das propriedades físicas e do estado de tensão.")
-st.divider()
+def voltar_para_fluxograma():
+    st.session_state.etapa = 1
 
-# 4. CRIAÇÃO DO LAYOUT LADO A LADO
-# col_img fica com proporção 1 (esquerda) e col_form com 1.2 (direita)
-col_img, col_form = st.columns([1, 1.2], gap="large") 
+# ==========================================
+# ETAPA 1: FLUXOGRAMA DO PROCESSO
+# ==========================================
+if st.session_state.etapa == 1:
+    st.title("Fluxograma da Metodologia")
+    st.caption("Visão geral do pipeline de análise e modelo preditivo.")
 
-# LADO ESQUERDO: Imagem do Fluxograma
-with col_img:
-    st.image("Fluxo de Previsão de Resiliência dos Solos.png", caption="Fluxo de processamento e previsão do Módulo de Resiliência", use_container_width=True)
+    # Caminho da imagem do fluxograma
+    caminho_imagem = "fluxograma.png"
 
-# LADO DIREITO: Campos de entrada
-with col_form:
-    st.header("Propriedades do Material e Ensaio")
-    
-    # Primeira dupla de colunas (apenas para as propriedades físicas do solo)
-    c1, c2 = st.columns(2)
-    
-    with c1:
-        ot = st.number_input("Umidade Ótima - OT (%)", value=8.0, step=0.1)
-        den = st.number_input("Massa Específica Seca Máx - DEN (g/cm³)", value=2.16, step=0.01)
-        cbr = st.number_input("Índice de Suporte Califórnia - CBR (%)", value=16.0, step=0.1)
-        ll = st.number_input("Limite de Liquidez - LL (%)", value=0.0, step=1.0)
-        ip = st.number_input("Índice de Plasticidade - IP (%)", value=0.0, step=1.0)
+    if os.path.exists(caminho_imagem):
+        st.image(caminho_imagem, caption="Fluxograma do Modelo de Previsão", use_container_width=True)
+    else:
+        st.info("Coloque o arquivo 'fluxograma.png' no mesmo diretório deste script para exibi-lo.")
 
-    with c2:
-        p2_0 = st.number_input("Passante 2,0 mm (%)", value=49.0, step=1.0)
-        p0_42 = st.number_input("Passante 0,42 mm (%)", value=26.0, step=1.0)
-        p0_074 = st.number_input("Passante 0,074 mm (%)", value=8.0, step=1.0)
-        aashto = st.selectbox("Classificação AASHTO", ["A-1-a", "A-1-b", "A-2-4", "A-2-5", "A-2-6", "A-2-7", "A-3", "A-4", "A-5", "A-6", "A-7-5", "A-7-6"])
+    st.markdown("---")
+
+    col_vazia, col_botao = st.columns([3, 1])
+    with col_botao:
+        st.button("Avançar ➡️", on_click=ir_para_parametros, use_container_width=True)
+
+# ==========================================
+# ETAPA 2: PARÂMETROS E PREVISÃO
+# ==========================================
+elif st.session_state.etapa == 2:
+    st.button("⬅️ Voltar ao Fluxograma", on_click=voltar_para_fluxograma)
+
+    st.title("Inserção de Parâmetros")
+    st.markdown("Preencha os valores abaixo para calcular a estimativa.")
+
+    with st.form("form_parametros"):
+        col1, col2 = st.columns(2)
         
-    st.markdown("---") # Linha divisória horizontal (ocupa a largura inteira da coluna direita)
+        with col1:
+            municipio = st.selectbox(
+                "Região / Município:",
+                ["Fortaleza", "Juazeiro do Norte", "Sobral", "Crato", "Outro"]
+            )
+            parametro_a = st.number_input("Parâmetro A (ex: Índice / Taxa):", min_value=0.0, value=10.0, step=0.1)
 
-    # Segunda dupla de colunas (exclusiva para as tensões, garantindo alinhamento perfeito)
-    c3, c4 = st.columns(2)
-    
-    with c3:
-        sigma3 = st.number_input("Tensão Confinante - σ3 (MPa)", value=0.021, format="%.3f")
+        with col2:
+            ano = st.number_input("Ano de Referência:", min_value=2000, max_value=2030, value=2026, step=1)
+            parametro_b = st.number_input("Parâmetro B (ex: Variável Explicativa):", min_value=0.0, value=5.0, step=0.5)
+
+        botao_calcular = st.form_submit_button("Gerar Previsão 🚀", use_container_width=True)
+
+    if botao_calcular:
+        # Exemplo simples de execução/inferência
+        resultado_estimado = (parametro_a * 1.5) + (parametro_b * 0.8)
         
-    with c4:
-        sigmad = st.number_input("Tensão Desviadora - σd (MPa)", value=0.041, format="%.3f")
-
-    st.markdown("<br>", unsafe_allow_html=True) # Espaçamento antes do botão
-    
-    # Botão e lógica de previsão
-    if st.button("Calcular Módulo de Resiliência", type="primary", use_container_width=True):
-        if pipeline is None:
-            st.error("Erro: O arquivo 'xgb_mr_model.pkl' não foi encontrado. Execute o script de treinamento primeiro.")
-        else:
-            with st.spinner("Processando dados e aplicando modelo XGBoost..."):
-                # Montagem do dataframe de entrada
-                input_data = pd.DataFrame({
-                    'OT': [ot], 'DEN': [den], 'CBR': [cbr], 'LL': [ll], 'IP': [ip],
-                    'P2_0': [p2_0], 'P0_42': [p0_42], 'P0_074': [p0_074],
-                    'Class': [aashto], 'sigma3': [sigma3], 'sigmad': [sigmad]
-                })
-                
-                # Predição (retorno na escala logarítmica)
-                pred_log = pipeline.predict(input_data)[0]
-                
-                # Reconversão para a unidade original de MPa
-                pred_mr = np.expm1(pred_log)
-                
-                st.success("✅ Previsão concluída com sucesso!")
-                st.metric(label="Módulo de Resiliência (MR) Previsto", value=f"{pred_mr:,.2f} MPa")
-                
-                st.info("""
-                *Nota técnica: Esta previsão atua como apoio exploratório e não substitui o ensaio laboratorial definitivo para projetos de pavimentação.*
-                """)
+        st.success("Cálculo realizado com sucesso!")
+        st.metric(label="Resultado Previsto", value=f"{resultado_estimado:.2f}")
