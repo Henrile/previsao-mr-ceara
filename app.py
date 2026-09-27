@@ -4,14 +4,33 @@ import numpy as np
 import joblib
 import os
 
-# 1. Configuração da página em modo "wide"
+# 1. Configuração da página
 st.set_page_config(
     page_title="Predição de MR - Ceará",
     page_icon="🛣️",
     layout="wide"
 )
 
-# 2. Carregar o modelo treinado com cache do Streamlit
+# Injeção de CSS para aumentar o tamanho dos botões em ~13% e garantir responsividade
+st.markdown("""
+    <style>
+    /* Aumenta a fonte e o padding dos botões */
+    div.stButton > button {
+        font-size: 1.13rem !important; 
+        padding: 0.6rem 1.2rem !important;
+        height: auto !important;
+        transition: 0.3s;
+    }
+    
+    /* Garante que imagens não quebrem no mobile */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# 2. Carregar o modelo treinado
 @st.cache_resource
 def load_model():
     try:
@@ -45,8 +64,8 @@ if st.session_state.etapa == 1:
 
     caminho_imagem = "Fluxo de Previsão de Resiliência dos Solos.png"
     if os.path.exists(caminho_imagem):
-        # Exibe a imagem centralizada ou em destaque
-        col_esq, col_centro, col_dir = st.columns([1, 8, 1])
+        # Para reduzir a imagem em 30%, alocamos 70% do espaço na coluna central (proporção 1.5 : 7 : 1.5 = 10 no total)
+        col_esq, col_centro, col_dir = st.columns([1.5, 7, 1.5])
         with col_centro:
             st.image(
                 caminho_imagem, 
@@ -58,7 +77,7 @@ if st.session_state.etapa == 1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Linha com o botão/seta para avançar
+    # Botão de avanço
     col_vazia, col_avanco = st.columns([4, 1])
     with col_avanco:
         st.button("Inserir Parâmetros ➡️", on_click=ir_para_parametros, type="primary", use_container_width=True)
@@ -67,7 +86,7 @@ if st.session_state.etapa == 1:
 # ETAPA 2: PARÂMETROS E PREVISÃO
 # =========================================================
 elif st.session_state.etapa == 2:
-    # Botão de retorno ao fluxograma
+    # Botão de retorno
     col_voltar, col_espaco = st.columns([1, 4])
     with col_voltar:
         st.button("⬅️ Voltar ao Fluxograma", on_click=voltar_para_fluxo, use_container_width=True)
@@ -106,23 +125,23 @@ elif st.session_state.etapa == 2:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Botão e lógica de previsão
-    if st.button("Calcular Módulo de Resiliência 🚀", type="primary", use_container_width=True):
+    # Botão de previsão centralizado e adaptável
+    _, col_btn, _ = st.columns([1, 2, 1])
+    with col_btn:
+        btn_calcular = st.button("Calcular Módulo de Resiliência 🚀", type="primary", use_container_width=True)
+
+    if btn_calcular:
         if pipeline is None:
             st.error("Erro: O arquivo 'xgb_mr_model.pkl' não foi encontrado. Certifique-se de que o modelo está na raiz do projeto.")
         else:
             with st.spinner("Processando dados e aplicando modelo XGBoost..."):
-                # Montagem do dataframe de entrada
                 input_data = pd.DataFrame({
                     'OT': [ot], 'DEN': [den], 'CBR': [cbr], 'LL': [ll], 'IP': [ip],
                     'P2_0': [p2_0], 'P0_42': [p0_42], 'P0_074': [p0_074],
                     'Class': [aashto], 'sigma3': [sigma3], 'sigmad': [sigmad]
                 })
                 
-                # Predição (retorno na escala logarítmica)
                 pred_log = pipeline.predict(input_data)[0]
-                
-                # Reconversão para a unidade original de MPa
                 pred_mr = np.expm1(pred_log)
                 
                 st.success("✅ Previsão concluída com sucesso!")
