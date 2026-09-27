@@ -13,23 +13,30 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS Global
+# 2. CSS Global com Media Queries para Textos Responsivos
 st.markdown("""
     <style>
+    /* Estilo dos Botões */
     div.stButton > button {
         font-size: 1.13rem !important; 
         padding: 0.6rem 1.2rem !important;
         height: auto !important;
         transition: 0.3s;
     }
-    img {
-        max-width: 100%;
-        height: auto;
+    
+    /* Controle de visibilidade dos textos de instrução */
+    .texto-desktop { display: block; color: #555; font-size: 0.9rem; margin-bottom: 10px; }
+    .texto-mobile { display: none; color: #555; font-size: 0.9rem; margin-bottom: 10px; }
+    
+    /* Quando a tela for menor que 768px (Celulares) */
+    @media (max-width: 768px) {
+        .texto-desktop { display: none; }
+        .texto-mobile { display: block; }
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Carregar o modelo
+# 3. Carregar o modelo
 @st.cache_resource
 def load_model():
     try:
@@ -39,7 +46,7 @@ def load_model():
 
 pipeline = load_model()
 
-# 3. Navegação
+# 4. Navegação
 if "etapa" not in st.session_state:
     st.session_state.etapa = 1
 
@@ -49,12 +56,11 @@ def ir_para_parametros():
 def voltar_para_fluxo():
     st.session_state.etapa = 1
 
-# Função para converter a imagem em Base64 (necessário para o iframe HTML)
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-# 4. Interface Geral
+# 5. Interface Geral
 st.title("Predição do Módulo de Resiliência (MR) - Solos do Ceará")
 st.markdown("Estimativa rápida a partir das propriedades físicas e do estado de tensão.")
 st.divider()
@@ -64,23 +70,26 @@ st.divider()
 # =========================================================
 if st.session_state.etapa == 1:
     st.subheader("1. Fluxograma Metodológico")
-    st.caption("🔍 Role o mouse ou faça o **movimento de pinça no celular** para dar zoom. Clique, arraste e solte para ver a animação elástica.")
+    
+    # Textos dinâmicos que mudam dependendo do dispositivo
+    st.markdown('<div class="texto-desktop">🔍 <b>No Computador:</b> Role o scroll do mouse para dar zoom. Clique, arraste e solte para ver a animação.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="texto-mobile">🔍 <b>No Celular:</b> Faça o movimento de pinça na tela para dar zoom. Toque, arraste e solte para ver a animação.</div>', unsafe_allow_html=True)
 
     caminho_imagem = "Fluxo de Previsão de Resiliência dos Solos.png"
     
     if os.path.exists(caminho_imagem):
         img_base64 = get_base64_image(caminho_imagem)
         
-        # HTML/CSS/JS para Pan & Zoom com efeito de mola (puxar e soltar)
+        # HTML/CSS do Container com Responsividade Interna
         custom_html = f"""
         <!DOCTYPE html>
         <html>
         <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
         <style>
+            body, html {{ margin: 0; padding: 0; width: 100%; height: 100%; }}
+            
             #container {{
-                width: 70%; /* Reduz a área da imagem em 30% em relação à tela (100-30) */
-                height: 500px;
                 margin: 0 auto;
                 overflow: hidden;
                 border: 2px dashed #ccc;
@@ -88,18 +97,30 @@ if st.session_state.etapa == 1:
                 position: relative;
                 background-color: #f9f9f9;
                 cursor: grab;
+                box-sizing: border-box;
+                /* Configuração padrão para MOBILE */
+                width: 100%;
+                height: 400px;
             }}
-            #container:active {{
-                cursor: grabbing;
+            
+            /* Configuração para DESKTOP (Telas maiores) */
+            @media (min-width: 768px) {{
+                #container {{
+                    width: 70%;
+                    height: 550px;
+                }}
             }}
+
+            #container:active {{ cursor: grabbing; }}
+            
             #zoom-img {{
                 width: 100%;
                 height: 100%;
                 object-fit: contain;
                 transform-origin: center center;
-                transition: transform 0.1s ease-out; /* Suavidade no pan/zoom */
+                transition: transform 0.1s ease-out;
             }}
-            /* Classe adicionada quando solta a imagem (efeito mola/despuxar) */
+            
             .spring-back {{
                 transition: transform 0.6s cubic-bezier(0.25, 1.5, 0.5, 1) !important;
             }}
@@ -112,7 +133,6 @@ if st.session_state.etapa == 1:
 
             <script src="https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js"></script>
             <script>
-                // Inicializa a biblioteca Panzoom para gerenciar pinça (mobile) e mouse (desktop)
                 const elem = document.getElementById('zoom-img');
                 const pz = panzoom(elem, {{
                     maxZoom: 5,
@@ -121,37 +141,28 @@ if st.session_state.etapa == 1:
                     boundsPadding: 0.1
                 }});
 
-                // Adiciona o efeito elástico (puxar e soltar)
-                let isDragging = false;
-                
                 elem.addEventListener('panzoomstart', () => {{
-                    isDragging = true;
                     elem.classList.remove('spring-back');
                 }});
 
                 elem.addEventListener('panzoomend', () => {{
-                    isDragging = false;
-                    // Ao soltar, se estiver fora do centro (pan), nós damos um pequeno efeito de volta
                     elem.classList.add('spring-back');
-                    
-                    // Opcional: Se quiser que volte sempre pro centro ao soltar, descomente a linha abaixo:
-                    // pz.moveTo(0, 0); 
                 }});
             </script>
         </body>
         </html>
         """
         
-        # Renderiza o componente HTML no Streamlit (70% de largura fica controlado no CSS acima, o iframe pega tudo)
-        components.html(custom_html, height=520)
+        # Ajustado height para evitar barras de rolagem estranhas
+        components.html(custom_html, height=580)
         
     else:
         st.warning(f"Imagem '{caminho_imagem}' não encontrada no diretório atual.")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Botão de avanço para a etapa 2
-    col_vazia, col_avanco = st.columns([4, 1])
+    # Botão de avanço centralizado
+    _, col_avanco, _ = st.columns([1, 2, 1])
     with col_avanco:
         st.button("Inserir Parâmetros ➡️", on_click=ir_para_parametros, type="primary", use_container_width=True)
 
@@ -160,13 +171,12 @@ if st.session_state.etapa == 1:
 # =========================================================
 elif st.session_state.etapa == 2:
     # Botão de retorno
-    col_voltar, col_espaco = st.columns([1, 4])
-    with col_voltar:
-        st.button("⬅️ Voltar ao Fluxograma", on_click=voltar_para_fluxo, use_container_width=True)
+    st.button("⬅️ Voltar ao Fluxograma", on_click=voltar_para_fluxo)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     st.subheader("2. Propriedades do Material e Ensaio")
 
-    # Primeira dupla de colunas (Propriedades físicas do solo)
+    # Primeira dupla de colunas (Propriedades físicas)
     c1, c2 = st.columns(2)
     
     with c1:
@@ -205,7 +215,7 @@ elif st.session_state.etapa == 2:
 
     if btn_calcular:
         if pipeline is None:
-            st.error("Erro: O arquivo 'xgb_mr_model.pkl' não foi encontrado. Certifique-se de que o modelo está na raiz do projeto.")
+            st.error("Erro: O arquivo 'xgb_mr_model.pkl' não foi encontrado.")
         else:
             with st.spinner("Processando dados e aplicando modelo XGBoost..."):
                 input_data = pd.DataFrame({
@@ -219,7 +229,3 @@ elif st.session_state.etapa == 2:
                 
                 st.success("✅ Previsão concluída com sucesso!")
                 st.metric(label="Módulo de Resiliência (MR) Previsto", value=f"{pred_mr:,.2f} MPa")
-                
-                st.info("""
-                *Nota técnica: Esta previsão atua como apoio exploratório e não substitui o ensaio laboratorial definitivo para projetos de pavimentação.*
-                """)
