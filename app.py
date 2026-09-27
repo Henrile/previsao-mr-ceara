@@ -50,6 +50,12 @@ def ir_para_parametros():
 def voltar_para_fluxo():
     st.session_state.etapa = 1
 
+# --- FUNÇÃO PARA ABRIR O ZOOM (MODAL) ---
+@st.dialog("Visualização Ampliada do Fluxograma", width="large")
+def modal_zoom_imagem(caminho):
+    st.image(caminho, use_container_width=True)
+    st.caption("🔍 Dica: No celular, faça o movimento de pinça com os dedos na tela para dar mais zoom.")
+
 # 4. Cabeçalho Geral
 st.title("Predição do Módulo de Resiliência (MR) - Solos do Ceará")
 st.markdown("Estimativa rápida a partir das propriedades físicas e do estado de tensão.")
@@ -63,21 +69,25 @@ if st.session_state.etapa == 1:
     st.caption("Conheça o processo de tratamento de dados e modelagem preditiva antes de inserir os parâmetros.")
 
     caminho_imagem = "Fluxo de Previsão de Resiliência dos Solos.png"
+    
     if os.path.exists(caminho_imagem):
-        # Para reduzir a imagem em 30%, alocamos 70% do espaço na coluna central (proporção 1.5 : 7 : 1.5 = 10 no total)
+        # Coluna centralizada recebendo 70% da largura (reduzindo 30% visualmente)
         col_esq, col_centro, col_dir = st.columns([1.5, 7, 1.5])
         with col_centro:
             st.image(
                 caminho_imagem, 
-                caption="Fluxo de processamento e previsão do Módulo de Resiliência", 
+                caption="Visualização Reduzida", 
                 use_container_width=True
             )
+            # Botão para ativar o zoom (Dialog)
+            if st.button("🔍 Ampliar Imagem / Dar Zoom", use_container_width=True):
+                modal_zoom_imagem(caminho_imagem)
     else:
         st.warning(f"Imagem '{caminho_imagem}' não encontrada no diretório atual.")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Botão de avanço
+    # Botão de avanço para a etapa 2
     col_vazia, col_avanco = st.columns([4, 1])
     with col_avanco:
         st.button("Inserir Parâmetros ➡️", on_click=ir_para_parametros, type="primary", use_container_width=True)
@@ -125,7 +135,7 @@ elif st.session_state.etapa == 2:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Botão de previsão centralizado e adaptável
+    # Botão de previsão centralizado
     _, col_btn, _ = st.columns([1, 2, 1])
     with col_btn:
         btn_calcular = st.button("Calcular Módulo de Resiliência 🚀", type="primary", use_container_width=True)
