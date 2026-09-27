@@ -16,10 +16,8 @@ st.set_page_config(
 # 2. CSS Global com Media Queries para Textos Responsivos
 st.markdown("""
     <style>
-    /* Estilo dos Botões */
+    /* Transição suave padrão para todos os botões */
     div.stButton > button {
-        font-size: 1.13rem !important; 
-        padding: 0.6rem 1.2rem !important;
         height: auto !important;
         transition: 0.3s;
     }
@@ -69,9 +67,20 @@ st.divider()
 # ETAPA 1: FLUXOGRAMA (COM ZOOM E ANIMAÇÃO)
 # =========================================================
 if st.session_state.etapa == 1:
+    
+    # CSS Específico para a Etapa 1: Botão "Inserir Parâmetros" ~40% maior
+    st.markdown("""
+        <style>
+        button[data-testid="baseButton-primary"] {
+            font-size: 1.4rem !important;  /* 40% maior que o base 1rem */
+            padding: 0.9rem 1.8rem !important;
+            font-weight: bold;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.subheader("1. Fluxograma Metodológico")
     
-    # Textos dinâmicos que mudam dependendo do dispositivo
     st.markdown('<div class="texto-desktop">🔍 <b>No Computador:</b> Role o scroll do mouse para dar zoom. Clique, arraste e solte para ver a animação.</div>', unsafe_allow_html=True)
     st.markdown('<div class="texto-mobile">🔍 <b>No Celular:</b> Faça o movimento de pinça na tela para dar zoom. Toque, arraste e solte para ver a animação.</div>', unsafe_allow_html=True)
 
@@ -80,7 +89,6 @@ if st.session_state.etapa == 1:
     if os.path.exists(caminho_imagem):
         img_base64 = get_base64_image(caminho_imagem)
         
-        # HTML/CSS do Container com Responsividade Interna
         custom_html = f"""
         <!DOCTYPE html>
         <html>
@@ -98,12 +106,10 @@ if st.session_state.etapa == 1:
                 background-color: #f9f9f9;
                 cursor: grab;
                 box-sizing: border-box;
-                /* Configuração padrão para MOBILE */
                 width: 100%;
                 height: 400px;
             }}
             
-            /* Configuração para DESKTOP (Telas maiores) */
             @media (min-width: 768px) {{
                 #container {{
                     width: 70%;
@@ -152,8 +158,6 @@ if st.session_state.etapa == 1:
         </body>
         </html>
         """
-        
-        # Ajustado height para evitar barras de rolagem estranhas
         components.html(custom_html, height=580)
         
     else:
@@ -161,7 +165,7 @@ if st.session_state.etapa == 1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Botão de avanço centralizado
+    # Centralizando o botão grande
     _, col_avanco, _ = st.columns([1, 2, 1])
     with col_avanco:
         st.button("Inserir Parâmetros ➡️", on_click=ir_para_parametros, type="primary", use_container_width=True)
@@ -170,13 +174,31 @@ if st.session_state.etapa == 1:
 # ETAPA 2: PARÂMETROS E PREVISÃO
 # =========================================================
 elif st.session_state.etapa == 2:
+    
+    # CSS Específico para a Etapa 2: Botão Calcular ~26% maior | Voltar em tamanho normal
+    st.markdown("""
+        <style>
+        /* Botão Calcular (Primary) */
+        button[data-testid="baseButton-primary"] {
+            font-size: 1.26rem !important; /* 26% maior que o base */
+            padding: 0.75rem 1.5rem !important;
+            font-weight: bold;
+        }
+        
+        /* Botão Voltar (Secondary/Padrão) */
+        button[data-testid="baseButton-secondary"] {
+            font-size: 1.0rem !important;
+            padding: 0.5rem 1.0rem !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     # Botão de retorno
     st.button("⬅️ Voltar ao Fluxograma", on_click=voltar_para_fluxo)
     st.markdown("<br>", unsafe_allow_html=True)
 
     st.subheader("2. Propriedades do Material e Ensaio")
 
-    # Primeira dupla de colunas (Propriedades físicas)
     c1, c2 = st.columns(2)
     
     with c1:
@@ -197,7 +219,6 @@ elif st.session_state.etapa == 2:
         
     st.markdown("---")
 
-    # Segunda dupla de colunas (Tensões)
     c3, c4 = st.columns(2)
     
     with c3:
@@ -208,7 +229,6 @@ elif st.session_state.etapa == 2:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Botão de previsão centralizado
     _, col_btn, _ = st.columns([1, 2, 1])
     with col_btn:
         btn_calcular = st.button("Calcular Módulo de Resiliência 🚀", type="primary", use_container_width=True)
