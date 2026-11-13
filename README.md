@@ -187,30 +187,29 @@ cd previsao-mr-ceara
 
 ## 2. Criar um ambiente virtual
 
-Use um ambiente virtual com **Python 3.12**. As versões de `scikit-learn` e `xgboost` em `requirements.txt` correspondem às do modelo serializado.
+O projeto é testado com **Python 3.12, 3.13 e 3.14**. O Python 3.12 é a versão de referência para a hospedagem. O arquivo `requirements.txt` seleciona a versão de pandas de acordo com o Python e fixa as versões de `scikit-learn` e `xgboost` usadas pelo modelo serializado.
 
 ### Windows
 
-```bash
-python -m venv venv
-```
+No PowerShell, crie um ambiente usando uma versão instalada do Python. Troque `-3.12` por `-3.13` ou `-3.14` se usar uma dessas versões.
 
-Ative o ambiente:
-
-```bash
-venv\Scripts\activate
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install --only-binary=:all: -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
 ### Linux/macOS
 
 ```bash
-python3 -m venv venv
+python3.12 -m venv .venv
 ```
 
 Ative:
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 ---
@@ -218,7 +217,7 @@ source venv/bin/activate
 ## 3. Instalar as dependências
 
 ```bash
-pip install -r requirements.txt
+python -m pip install --only-binary=:all: -r requirements.txt
 ```
 
 As principais dependências são:
@@ -241,7 +240,7 @@ openpyxl
 Com o modelo `xgb_mr_model.pkl` disponível na pasta do projeto, execute:
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 O Streamlit disponibilizará um endereço local, normalmente:
@@ -251,6 +250,10 @@ http://localhost:8501
 ```
 
 Abra esse endereço no navegador.
+
+### Streamlit Community Cloud
+
+Em uma nova implantação, selecione **Python 3.12** em **Advanced settings**. Se uma publicação existente parar durante a inicialização, abra **Manage app** e confira nos logs a versão do Python e a primeira mensagem de erro na instalação ou execução.
 
 ---
 

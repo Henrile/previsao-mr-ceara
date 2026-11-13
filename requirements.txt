@@ -1,6 +1,7 @@
 streamlit==1.67.0
 altair==6.3.0
-pandas==2.2.3
+pandas==2.2.3; python_version < "3.14"
+pandas==2.3.3; python_version >= "3.14"
 numpy==2.3.5
 xgboost==3.4.1
 scikit-learn==1.9.1
