@@ -2,7 +2,7 @@
 
 Aplicação desenvolvida em **Python** para estimativa do **Módulo de Resiliência (MR)** de materiais empregados em pavimentação, utilizando técnicas de **Aprendizado de Máquina (Machine Learning)**.
 
-O sistema utiliza um modelo de regressão baseado no algoritmo **XGBoost** e disponibiliza uma interface gráfica desenvolvida com **Streamlit**, permitindo que o usuário informe propriedades físicas, granulométricas e parâmetros de estado de tensão do material para obter uma estimativa do Módulo de Resiliência em **MPa**.
+O sistema utiliza um modelo de regressão baseado no algoritmo **XGBoost** e disponibiliza uma interface gráfica desenvolvida com **Streamlit**, permitindo que o usuário informe propriedades físicas, granulométricas e parâmetros de estado de tensão do material para obter uma estimativa do Módulo de Resiliência em **MPa**. O aplicativo também inclui um painel exploratório para os valores medidos em laboratório.
 
 ---
 
@@ -98,6 +98,8 @@ MR — Módulo de Resiliência (MPa)
 previsao-mr-ceara/
 │
 ├── app.py
+├── dashboard.py
+├── soil_data.py
 ├── train.py
 ├── xgb_mr_model.pkl
 ├── requirements.txt
@@ -133,6 +135,10 @@ O arquivo realiza:
 6. treinamento do XGBoost;
 7. criação do pipeline de Machine Learning;
 8. salvamento do modelo utilizando `joblib`.
+
+### `dashboard.py` e `soil_data.py`
+
+Interface de exploração dos ensaios e padronização dos cabeçalhos utilizados pela base e pelo treinamento.
 
 ### `xgb_mr_model.pkl`
 
@@ -181,7 +187,7 @@ cd previsao-mr-ceara
 
 ## 2. Criar um ambiente virtual
 
-É recomendável utilizar um ambiente virtual Python.
+Use um ambiente virtual com **Python 3.12**. As versões de `scikit-learn` e `xgboost` em `requirements.txt` correspondem às do modelo serializado.
 
 ### Windows
 
@@ -219,6 +225,7 @@ As principais dependências são:
 
 ```text
 streamlit
+altair
 pandas
 numpy
 xgboost
@@ -279,29 +286,34 @@ Módulo de Resiliência (MR) Previsto
 
 em **MPa**.
 
+### Painel de ensaios
+
+1. Abra **Painel de ensaios** e carregue a planilha `.xlsx` ou o arquivo `.csv`. Em `Banco_MR_CE_LIMPO_1673.xlsx`, selecione a aba **Banco_Limpo**.
+2. Use os filtros por classe AASHTO, solo, tensão confinante e tensão desviadora para atualizar os indicadores. Cada linha representa um padrão de ensaio. A contagem de solos usa os identificadores distintos da amostra.
+3. Explore a distribuição do MR, as contagens por classe, a dispersão e as correlações de Pearson. A aba **Qualidade** mostra campos ausentes e sinaliza inconsistências de granulometria, classes inesperadas e MR não positivo.
+4. Use **Registros → Baixar recorte em CSV** para exportar as colunas reconhecidas do recorte.
+
+O painel requer uma coluna `MR` ou `MR (MPa)`. Reconhece `Nome` como identificador, `AASHTO` ou `Class ` como classe textual e `σ3`/`σd` ou `sigma3`/`sigmad` como tensões. Informe MR e tensões em MPa e percentuais passantes na escala de 0 a 100. O aplicativo recebe os dados por upload e mantém a análise na sessão do usuário. As estatísticas descrevem o arquivo carregado, com valores positivos e numéricos de MR usados nas análises de distribuição, dispersão e correlação.
+
 ---
 
 ## 🏗️ Treinamento do modelo
 
-Caso seja necessário treinar novamente o modelo, disponibilize a base de dados em formato Excel e ajuste, em `train.py`, o endereço:
-
-```python
-df = pd.read_excel("seu banco de dados.xlsx")
-```
-
-Depois execute:
+Informe o caminho da base Excel ou CSV na linha de comando. Em um arquivo Excel, `--sheet` permite selecionar a aba pelo nome.
 
 ```bash
-python train.py
+python train.py Banco_MR_CE_LIMPO_1673.xlsx --sheet Banco_Limpo --output xgb_mr_candidato.pkl
 ```
 
-Ao final do processamento será criado:
+Para avaliar a generalização a solos não vistos, execute:
 
-```text
-xgb_mr_model.pkl
+```bash
+python train.py Banco_MR_CE_LIMPO_1673.xlsx --sheet Banco_Limpo --validate
 ```
 
-O arquivo será utilizado automaticamente pelo `app.py`.
+O modo `--validate` executa cinco dobras agrupadas pelo identificador do solo, ajusta o pré-processamento dentro de cada dobra e calcula R², MAE e RMSE na escala original do MR. A validação preserva todos os padrões do mesmo solo em uma única partição de cada dobra.
+
+O arquivo `xgb_mr_model.pkl` distribuído com o aplicativo foi reproduzido a partir da base original de 1.853 padrões. Use a base consolidada de 1.673 padrões para avaliar um modelo candidato antes de substituir o arquivo usado pelo `app.py`. O comando com `--output` acima mantém o candidato em um arquivo separado durante a avaliação.
 
 ---
 
