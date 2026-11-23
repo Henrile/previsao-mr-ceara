@@ -13,6 +13,12 @@ def start_app():
 
 def test_previsao_com_modelo_do_repositorio():
     app = start_app()
+    flow_markup = next((item.value for item in app.markdown if "<ol class=\"flow-grid\"" in item.value), "")
+    assert all(
+        step in flow_markup
+        for step in ("Dados de entrada", "Validação", "Preparação", "Modelo XGBoost", "MR = exp(y)")
+    )
+
     app.button[0].click().run()
     app.button[1].click().run()
 
