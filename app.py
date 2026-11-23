@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import joblib
@@ -25,25 +26,134 @@ st.set_page_config(
 # ==========================================
 # 2. CSS Global (Textos Responsivos e Botões Base)
 # ==========================================
-st.markdown("""
+
+def get_theme_css(theme_name):
+    dark = theme_name == "Escuro"
+    palette = {
+        "bg": "#0a1118" if dark else "#f5f7fb",
+        "surface": "rgba(15, 23, 32, 0.82)" if dark else "rgba(255, 255, 255, 0.82)",
+        "surface-strong": "rgba(16, 26, 36, 0.9)" if dark else "rgba(255,255,255,0.55)",
+        "border": "rgba(148, 163, 184, 0.2)" if dark else "rgba(22, 131, 117, 0.15)",
+        "primary": "#7ad9c5" if dark else "#168375",
+        "primary-dark": "#b9f1e6" if dark else "#0f685d",
+        "accent": "#f4b98c" if dark else "#a45d27",
+        "text": "#edf4ff" if dark else "#1f2a37",
+        "muted": "#c2d0df" if dark else "#5f6b7a",
+        "shadow": "rgba(15, 23, 42, 0.35)" if dark else "rgba(15, 23, 42, 0.05)",
+        "grad-a": "#0a1118" if dark else "#f5f7fb",
+        "grad-b": "#101a24" if dark else "#eef4f2",
+    }
+
+    return f"""
     <style>
-    /* Transição suave padrão para todos os botões */
-    div.stButton > button {
+    :root {{
+        --bg-soft: {palette['bg']};
+        --card-bg: {palette['surface']};
+        --surface-strong: {palette['surface-strong']};
+        --border-soft: {palette['border']};
+        --primary: {palette['primary']};
+        --primary-dark: {palette['primary-dark']};
+        --accent: {palette['accent']};
+        --text: {palette['text']};
+        --muted: {palette['muted']};
+        --shadow: {palette['shadow']};
+    }}
+
+    div[data-testid="stAppViewContainer"] {{
+        background: linear-gradient(180deg, {palette['grad-a']} 0%, {palette['grad-b']} 100%);
+    }}
+
+    div[data-testid="stMain"] {{
+        padding-top: 1rem;
+    }}
+
+    div.stButton > button {{
         height: auto !important;
-        transition: 0.3s;
-    }
+        transition: 0.3s ease-in-out;
+        border-radius: 0.8rem !important;
+        box-shadow: 0 8px 22px rgba(22, 131, 117, 0.12);
+    }}
 
-    /* Controle de visibilidade dos textos de instrução (PC vs Mobile) */
-    .texto-desktop { display: block; color: #555; font-size: 0.9rem; margin-bottom: 10px; }
-    .texto-mobile { display: none; color: #555; font-size: 0.9rem; margin-bottom: 10px; }
+    div.stButton > button:hover {{
+        transform: translateY(-1px);
+        filter: brightness(1.03);
+    }}
 
-    /* Quando a tela for menor que 768px (Celulares) */
-    @media (max-width: 768px) {
-        .texto-desktop { display: none; }
-        .texto-mobile { display: block; }
-    }
+    .app-shell {{
+        background: var(--surface-strong);
+        border: 1px solid var(--border-soft);
+        border-radius: 1.1rem;
+        padding: 1.1rem 1.2rem 0.8rem;
+        box-shadow: 0 10px 30px var(--shadow);
+    }}
+
+    .header-panel {{
+        background: linear-gradient(135deg, rgba(22, 131, 117, 0.08), rgba(164, 93, 39, 0.06));
+        border: 1px solid var(--border-soft);
+        border-radius: 1rem;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1rem;
+    }}
+
+    .header-panel h1 {{
+        margin-bottom: 0.15rem;
+        color: var(--text);
+    }}
+
+    .header-panel p {{
+        margin: 0;
+        color: var(--muted);
+        font-size: 1rem;
+    }}
+
+    .pill {{
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.35rem 0.75rem;
+        background: rgba(22, 131, 117, 0.08);
+        border: 1px solid rgba(22, 131, 117, 0.15);
+        border-radius: 999px;
+        color: var(--primary-dark);
+        font-weight: 600;
+        font-size: 0.82rem;
+    }}
+
+    .info-card {{
+        background: var(--card-bg);
+        border: 1px solid var(--border-soft);
+        border-radius: 0.9rem;
+        padding: 0.9rem 1rem;
+        box-shadow: 0 8px 18px rgba(20, 28, 34, 0.04);
+    }}
+
+    .info-card h4 {{
+        margin: 0 0 0.3rem 0;
+        color: var(--text);
+    }}
+
+    .info-card p {{
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.4;
+    }}
+
+    .texto-desktop {{ display: block; color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; }}
+    .texto-mobile {{ display: none; color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; }}
+
+    @media (max-width: 768px) {{
+        .texto-desktop {{ display: none; }}
+        .texto-mobile {{ display: block; }}
+        .app-shell {{ padding: 0.85rem 0.8rem 0.5rem; }}
+    }}
     </style>
-""", unsafe_allow_html=True)
+    """
+
+
+if "theme" not in st.session_state:
+    st.session_state.theme = "Claro"
+
+st.markdown(get_theme_css(st.session_state.get("theme", "Claro")), unsafe_allow_html=True)
 
 # ==========================================
 # 3. Funções de Suporte e Carregamento
@@ -113,8 +223,64 @@ def get_base64_image(image_path):
 # ==========================================
 # 4. Cabeçalho Geral
 # ==========================================
-st.title("Predição do Módulo de Resiliência (MR) - Solos do Ceará")
-st.markdown("Estime o MR com XGBoost e explore os resultados de ensaios de laboratório.")
+
+def render_app_header():
+    current_theme = st.session_state.get("theme", "Claro")
+    st.radio(
+        "Tema",
+        ["Claro", "Escuro"],
+        index=0 if current_theme == "Claro" else 1,
+        horizontal=True,
+        key="theme",
+    )
+
+    st.markdown("<div class='app-shell'>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class='header-panel'>
+            <div class='pill'>🚧 Estimativa geotécnica assistida por IA</div>
+            <h1>Predição do Módulo de Resiliência (MR) - Solos do Ceará</h1>
+            <p>Estime o MR com XGBoost e explore os resultados de ensaios de laboratório com apoio visual e análise comparativa.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    intro_cols = st.columns(3)
+    with intro_cols[0]:
+        st.markdown(
+            """
+            <div class='info-card'>
+                <h4>📘 Entrada</h4>
+                <p>Propriedades físicas, granulométricas e estados de tensão do material.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with intro_cols[1]:
+        st.markdown(
+            """
+            <div class='info-card'>
+                <h4>🧠 Modelo</h4>
+                <p>Regressor XGBoost treinado para estimar o MR em MPa.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with intro_cols[2]:
+        st.markdown(
+            """
+            <div class='info-card'>
+                <h4>📊 Validação</h4>
+                <p>Comparação com ensaios, filtros por solo, classe e tensão.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+render_app_header()
 prediction_view, dashboard_view = st.tabs(["Previsão de MR", "Painel de ensaios"])
 
 with dashboard_view:
@@ -224,7 +390,7 @@ if st.session_state.etapa == 1:
         """
 
         # Componente com altura exata para não gerar barras de rolagem desnecessárias
-        prediction_view.iframe(custom_html, height=400, tab_index=0, alt="Fluxograma metodológico interativo")
+        components.html(custom_html, height=400, scrolling=False)
 
     else:
         prediction_view.warning(f"A imagem '{caminho_imagem.name}' não está na pasta do aplicativo.")

@@ -18,6 +18,45 @@ OCHRE = "#A45D27"
 UNCLASSIFIED = "Sem classificação"
 
 
+def render_dashboard_theme():
+    dark = st.session_state.get("theme", "Claro") == "Escuro"
+    palette = {
+        "bg": "rgba(10, 17, 24, 0.78)" if dark else "rgba(255,255,255,0.7)",
+        "bg2": "rgba(16, 26, 36, 0.86)" if dark else "rgba(22, 131, 117, 0.05)",
+        "border": "rgba(148, 163, 184, 0.18)" if dark else "rgba(22, 131, 117, 0.12)",
+        "text": "#edf4ff" if dark else "#1f2a37",
+        "muted": "#c2d0df" if dark else "#5f6b7a",
+    }
+    st.markdown(
+        f"""
+        <style>
+        div[data-testid="stMain"] {{
+            padding-top: 1rem;
+        }}
+        .dashboard-shell {{
+            background: linear-gradient(180deg, {palette['bg2']}, {palette['bg']});
+            border: 1px solid {palette['border']};
+            border-radius: 1rem;
+            padding: 1rem 1.1rem 0.8rem;
+            box-shadow: 0 8px 22px rgba(16, 24, 40, 0.04);
+            color: {palette['text']};
+        }}
+        .dashboard-shell h2 {{
+            margin-bottom: 0.15rem;
+            color: {palette['text']};
+        }}
+        .dashboard-shell * {{
+            color: {palette['text']} !important;
+        }}
+        .dashboard-shell .stCaption, .dashboard-shell .stMarkdown p, .dashboard-shell .stDownloadButton {{
+            color: {palette['muted']} !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 @st.cache_data(scope="session", max_entries=4, show_spinner=False)
 def workbook_sheets(contents):
     with pd.ExcelFile(BytesIO(contents)) as workbook:
@@ -94,7 +133,7 @@ def render_histogram(mr, source_key):
             alt.Tooltip("registros:Q", title="Padrões de ensaio"),
         ],
     ).properties(height=265)
-    st.altair_chart(chart, alt="Histograma dos valores positivos de MR medido")
+    st.altair_chart(chart)
     st.caption(f"MR de {format_number(mr.min(), 2)} a {format_number(mr.max(), 2)} MPa no recorte.")
     return logarithmic
 
@@ -111,7 +150,7 @@ def render_classes(data):
         y=alt.Y("classe:N", sort="-x", title=None),
         tooltip=[alt.Tooltip("classe:N", title=LABELS["Class"]), alt.Tooltip("registros:Q", title="Padrões de ensaio")],
     ).properties(height=300)
-    st.altair_chart(chart, alt="Número de padrões de ensaio por classe AASHTO")
+    st.altair_chart(chart)
 
 
 def render_scatter(data, fields, source_key, logarithmic):
@@ -140,7 +179,7 @@ def render_scatter(data, fields, source_key, logarithmic):
                 axis=alt.Axis(tickCount=6)),
         tooltip=tooltip,
     ).properties(height=320).interactive()
-    st.altair_chart(chart, alt=f"Dispersão do MR medido em relação a {LABELS[variable]}")
+    st.altair_chart(chart)
 
 
 def render_correlations(data, fields):
@@ -160,7 +199,7 @@ def render_correlations(data, fields):
         tooltip=[alt.Tooltip("linha:N", title="Variável 1"), alt.Tooltip("coluna:N", title="Variável 2"),
                  alt.Tooltip("r:Q", title="Pearson (r)", format=".3f")],
     ).properties(height=max(180, len(fields) * 24))
-    st.altair_chart(chart, alt="Matriz de correlação de Pearson das variáveis numéricas")
+    st.altair_chart(chart)
     st.caption("Cada célula usa pelo menos três pares válidos. Um mesmo solo pode aparecer em vários estados de tensão.")
 
 
@@ -188,8 +227,11 @@ def render_quality(data):
 
 @st.fragment
 def render_dashboard():
+    render_dashboard_theme()
+    st.markdown("<div class='dashboard-shell'>", unsafe_allow_html=True)
     st.header("Painel de ensaios")
     st.caption("MR medido em laboratório, com recortes por solo, classe AASHTO e estado de tensão.")
+    st.markdown("</div>", unsafe_allow_html=True)
     upload = st.file_uploader(
         "Base de ensaios", type=["xlsx", "csv"], key="mr_data_file",
         help="Use a planilha original ou a consolidada da pesquisa. As tensões e o MR devem estar em MPa.",
