@@ -150,7 +150,7 @@ Contém as bibliotecas Python necessárias para execução do projeto.
 
 ### `Fluxo de Previsão de Resiliência dos Solos.png`
 
-Fluxograma ilustrativo utilizado na interface da aplicação.
+Imagem original preservada como material de referência. Na interface, o processo é apresentado em etapas responsivas com cartões.
 
 ---
 

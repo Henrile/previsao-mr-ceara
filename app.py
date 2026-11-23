@@ -1,9 +1,7 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import joblib
-import base64
 import logging
 from pathlib import Path
 
@@ -138,13 +136,78 @@ def get_theme_css(theme_name):
         line-height: 1.4;
     }}
 
-    .texto-desktop {{ display: block; color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; }}
-    .texto-mobile {{ display: none; color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; }}
+    .flow-grid {{
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.8rem;
+        list-style: none;
+        margin: 1rem 0 0;
+        padding: 0;
+    }}
+
+    .flow-card {{
+        min-width: 0;
+        min-height: 180px;
+        padding: 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-soft);
+        border-radius: 0.9rem;
+        box-shadow: 0 8px 18px rgba(20, 28, 34, 0.04);
+    }}
+
+    .flow-card--result {{
+        border-color: var(--primary);
+        box-shadow: 0 8px 22px rgba(22, 131, 117, 0.12);
+    }}
+
+    .flow-card__heading {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.8rem;
+    }}
+
+    .flow-card__icon {{
+        font-size: 1.35rem;
+        line-height: 1;
+    }}
+
+    .flow-card__step {{
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }}
+
+    .flow-card h3 {{
+        margin: 0 0 0.45rem;
+        color: var(--text);
+        font-size: 1rem;
+    }}
+
+    .flow-card p {{
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+    }}
+
+    .flow-card code {{
+        color: var(--primary-dark);
+        font-size: 0.82rem;
+        font-weight: 600;
+    }}
 
     @media (max-width: 768px) {{
-        .texto-desktop {{ display: none; }}
-        .texto-mobile {{ display: block; }}
         .app-shell {{ padding: 0.85rem 0.8rem 0.5rem; }}
+        .flow-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+        .flow-card {{ min-height: 0; padding: 0.85rem; }}
+    }}
+
+    @media (max-width: 520px) {{
+        .flow-grid {{ grid-template-columns: minmax(0, 1fr); }}
     }}
     </style>
     """
@@ -211,13 +274,6 @@ def ir_para_parametros():
 
 def voltar_para_fluxo():
     st.session_state.etapa = 1
-
-
-# Função para converter imagem em Base64 para usar no HTML/JS
-@st.cache_data(show_spinner=False)
-def get_base64_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
 
 
 # ==========================================
@@ -287,7 +343,7 @@ with dashboard_view:
     render_dashboard()
 
 # =========================================================
-# ETAPA 1: FLUXOGRAMA (COM ZOOM E ANIMAÇÃO)
+# ETAPA 1: FLUXO DE CÁLCULO
 # =========================================================
 if st.session_state.etapa == 1:
 
@@ -302,98 +358,54 @@ if st.session_state.etapa == 1:
         </style>
     """, unsafe_allow_html=True)
 
-    prediction_view.subheader("1. Fluxograma Metodológico")
-
-    # Instruções dinâmicas para PC e Celular
+    prediction_view.subheader("1. Como a estimativa é calculada")
     prediction_view.markdown(
-        '<div class="texto-desktop">Use a roda do mouse para ampliar. Clique e arraste para mover a imagem.</div>',
-        unsafe_allow_html=True,
-    )
-    prediction_view.markdown(
-        '<div class="texto-mobile">Faça o gesto de pinça para ampliar. Toque e arraste para mover a imagem.</div>',
-        unsafe_allow_html=True,
-    )
-
-    caminho_imagem = BASE_DIR / "Fluxo de Previsão de Resiliência dos Solos.png"
-
-    if caminho_imagem.is_file():
-        img_base64 = get_base64_image(caminho_imagem)
-
-        # HTML/CSS ajustado para não ter sobras brancas ao redor da imagem
-        custom_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-        <style>
-            body, html {{ margin: 0; padding: 0; width: 100%; height: 100%; }}
-
-            #container {{
-                margin: 0 auto;
-                overflow: hidden;
-                border: 2px dashed #ccc;
-                border-radius: 10px;
-                position: relative;
-                background-color: #f9f9f9;
-                cursor: grab;
-                box-sizing: border-box;
-                width: 100%;
-                height: 250px; /* Altura reduzida no Celular */
-            }}
-
-            @media (min-width: 768px) {{
-                #container {{
-                    width: 70%;
-                    height: 380px; /* Altura ajustada no PC para abraçar bem a imagem */
-                }}
-            }}
-
-            #container:active {{ cursor: grabbing; }}
-
-            #zoom-img {{
-                width: 100%;
-                height: 100%;
-                object-fit: contain; /* Ajusta a imagem dentro da div sem distorcer */
-                transform-origin: center center;
-                transition: transform 0.1s ease-out;
-            }}
-
-            .spring-back {{
-                transition: transform 0.6s cubic-bezier(0.25, 1.5, 0.5, 1) !important;
-            }}
-        </style>
-        </head>
-        <body>
-            <div id="container">
-                <img id="zoom-img" src="data:image/png;base64,{img_base64}" alt="Fluxograma" draggable="false" />
-            </div>
-
-            <!-- Biblioteca JavaScript para lidar com o gesto de pinça e pan -->
-            <script src="https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js"
-                integrity="sha384-eexGhKur8uM8+ZcFzz42RmxqFkn5dlKkACVXVptLAlKhEkBGbGpyMfVxcRNjK6ka"
-                crossorigin="anonymous"></script>
-            <script>
-                if (typeof panzoom === 'function') {{
-                    const elem = document.getElementById('zoom-img');
-                    panzoom(elem, {{
-                        maxZoom: 5,
-                        minZoom: 0.5,
-                        bounds: true,
-                        boundsPadding: 0.1
-                    }});
-                    elem.addEventListener('panzoomstart', () => elem.classList.remove('spring-back'));
-                    elem.addEventListener('panzoomend', () => elem.classList.add('spring-back'));
-                }}
-            </script>
-        </body>
-        </html>
         """
-
-        # Componente com altura exata para não gerar barras de rolagem desnecessárias
-        components.html(custom_html, height=400, scrolling=False)
-
-    else:
-        prediction_view.warning(f"A imagem '{caminho_imagem.name}' não está na pasta do aplicativo.")
+        <ol class="flow-grid" aria-label="Etapas do cálculo do módulo de resiliência">
+            <li class="flow-card">
+                <div class="flow-card__heading">
+                    <span class="flow-card__icon" aria-hidden="true">🧪</span>
+                    <span class="flow-card__step">Etapa 1</span>
+                </div>
+                <h3>Dados de entrada</h3>
+                <p>Propriedades do solo, classe AASHTO e tensões do ensaio.</p>
+            </li>
+            <li class="flow-card">
+                <div class="flow-card__heading">
+                    <span class="flow-card__icon" aria-hidden="true">✓</span>
+                    <span class="flow-card__step">Etapa 2</span>
+                </div>
+                <h3>Validação</h3>
+                <p>Confere valores, densidade positiva e ordem dos percentuais passantes.</p>
+            </li>
+            <li class="flow-card">
+                <div class="flow-card__heading">
+                    <span class="flow-card__icon" aria-hidden="true">⚙️</span>
+                    <span class="flow-card__step">Etapa 3</span>
+                </div>
+                <h3>Preparação</h3>
+                <p>Organiza as variáveis e codifica a classe AASHTO para o modelo.</p>
+            </li>
+            <li class="flow-card">
+                <div class="flow-card__heading">
+                    <span class="flow-card__icon" aria-hidden="true">🤖</span>
+                    <span class="flow-card__step">Etapa 4</span>
+                </div>
+                <h3>Modelo XGBoost</h3>
+                <p>Estima o valor transformado <code>ln(1 + MR)</code>.</p>
+            </li>
+            <li class="flow-card flow-card--result">
+                <div class="flow-card__heading">
+                    <span class="flow-card__icon" aria-hidden="true">📈</span>
+                    <span class="flow-card__step">Etapa 5</span>
+                </div>
+                <h3>Resultado</h3>
+                <p>Retorna à escala original: <code>MR = exp(y) − 1</code>, em MPa.</p>
+            </li>
+        </ol>
+        """,
+        unsafe_allow_html=True,
+    )
 
     prediction_view.markdown("<br>", unsafe_allow_html=True)
 
